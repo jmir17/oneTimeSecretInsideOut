@@ -1,0 +1,26 @@
+import { NextFunction, Response, Request } from "express";
+import { Secret } from "../../../domain/models/Secret";
+import { SecretStorer } from "../../../domain/ports/in/SecretStorer";
+import { ValidationError } from "./ValidationError";
+
+export class SecretsController {
+    constructor(private secretStorer: SecretStorer) { }
+
+    createSecret = async (request: Request, response: Response, next: NextFunction) => {
+        try {
+            this.validateRequest(request);
+
+            const secret = new Secret(request.body.secret);
+            const urlId = await this.secretStorer.storeSecret(secret);
+
+            response.status(201).json(urlId);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    private validateRequest(request: Request) {
+        if (!request.body || !request.body?.secret || typeof request.body?.secret != "string")
+            throw new ValidationError("Request body not valid");
+    }
+}
